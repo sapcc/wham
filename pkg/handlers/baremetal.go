@@ -63,6 +63,10 @@ func NewBaremetalHandler(ctx context.Context) (*Baremetal, error) {
 		return nil, err
 	}
 
+	if err := prometheus.Register(alertsCounter); err != nil {
+		return nil, err
+	}
+
 	contextLogger := log.WithFields(log.Fields{
 		"component": "baremetal_handler",
 	})
