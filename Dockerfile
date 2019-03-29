@@ -3,7 +3,7 @@ WORKDIR /go/src/github.com/sapcc/wham
 RUN apk add --no-cache make
 COPY . .
 ARG VERSION
-RUN make go_build
+RUN make all
 
 FROM alpine:3.9
 LABEL maintainer="Stefan Hipfel <stefan.hipfel@sap.com>"

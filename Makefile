@@ -1,10 +1,10 @@
-IMAGE   ?= hub.global.cloud.sap/monsoon/whale
+IMAGE   ?= hub.global.cloud.sap/monsoon/wham
 VERSION = $(shell git rev-parse --verify HEAD | head -c 8)
 
 GOOS    ?= $(shell go env | grep GOOS | cut -d'"' -f2)
-BINARY  := whale
+BINARY  := wham
 
-LDFLAGS := -X github.com/sapcc/whale/pkg/whale.VERSION=$(VERSION)
+LDFLAGS := -X github.com/sapcc/wham/pkg/wham.VERSION=$(VERSION)
 GOFLAGS := -ldflags "$(LDFLAGS)"
 
 all: bin/$(GOOS)/$(BINARY)

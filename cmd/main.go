@@ -29,14 +29,18 @@ type (
 var conf config.Config
 
 func init() {
-	flag.StringVar(&conf.AppEnv, "APP_ENV", "development", "To set Log Level: development or production")
-	flag.StringVar(&conf.Version, "OS_VERSION", "v0.0.1", "Wham Version")
+	flag.StringVar(&conf.DebugLevel, "debug-level", "info", "To set Log Level: development or production")
 	flag.IntVar(&conf.MetricPort, "metric-port", 9090, "Prometheus metric port")
+	flag.IntVar(&conf.ListenPort, "listen-port", 8080, "Webhook listen port")
 	flag.Parse()
 
 	log.SetFormatter(&log.JSONFormatter{})
 	log.SetOutput(os.Stdout)
-	log.SetLevel(log.InfoLevel)
+	lvl, err := log.ParseLevel(conf.DebugLevel)
+	if err != nil {
+		lvl = log.InfoLevel
+	}
+	log.SetLevel(lvl)
 }
 
 func main() {

@@ -21,8 +21,7 @@ package config
 
 // Options passed via cmd line
 type Config struct {
-	AppEnv     string
-	Version    string
-	ListenPort int
+	DebugLevel string
 	MetricPort int
+	ListenPort int
 }
