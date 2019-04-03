@@ -22,7 +22,6 @@ package handlers
 import (
 	"context"
 	"errors"
-	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -51,13 +50,13 @@ var alertsCounter = prometheus.NewCounter(prometheus.CounterOpts{
 
 func NewBaremetalHandler(ctx context.Context) (*Baremetal, error) {
 	opts, err := openstack.AuthOptionsFromEnv()
-	log.Debug(opts.Username)
-	log.Debug(opts.DomainName)
-	log.Debug(opts.IdentityEndpoint)
-	log.Debug(os.Getenv("OS_USERNAME"))
 	if err != nil {
-		log.Error("Auth Error")
 		return nil, err
+	}
+	opts.AllowReauth = true
+	opts.Scope = &gophercloud.AuthScope{
+		ProjectName: opts.TenantName,
+		DomainName:  opts.DomainName,
 	}
 	provider, err := openstack.AuthenticatedClient(opts)
 	if err != nil {
