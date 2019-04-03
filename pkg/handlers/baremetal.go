@@ -55,6 +55,10 @@ func NewBaremetalHandler(ctx context.Context) (*Baremetal, error) {
 	log.Debug(opts.DomainName)
 	log.Debug(opts.IdentityEndpoint)
 	log.Debug(os.Getenv("OS_USERNAME"))
+	if err != nil {
+		log.Error("Auth Error")
+		return nil, err
+	}
 	provider, err := openstack.AuthenticatedClient(opts)
 	if err != nil {
 		return nil, err
