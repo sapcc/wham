@@ -33,7 +33,7 @@ func init() {
 	flag.StringVar(&opts.DebugLevel, "debug-level", "info", "To set Log Level: development or production")
 	flag.IntVar(&opts.MetricPort, "metric-port", 9090, "Prometheus metric port")
 	flag.IntVar(&opts.ListenPort, "listen-port", 8080, "Webhook listen port")
-	flag.StringVar(&opts.ConfigFilePath, "config-file", "./etc/wham.yaml", "Path to the config file")
+	flag.StringVar(&opts.ConfigFilePath, "config-file", "/etc/config/wham.yaml", "Path to the config file")
 	flag.Parse()
 
 	log.SetFormatter(&log.JSONFormatter{})
