@@ -22,6 +22,7 @@ package handlers
 import (
 	"context"
 	"errors"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -51,6 +52,7 @@ var alertsCounter = prometheus.NewCounter(prometheus.CounterOpts{
 func NewBaremetalHandler(ctx context.Context) (*Baremetal, error) {
 	opts, err := openstack.AuthOptionsFromEnv()
 	log.Debug(opts.Username)
+	log.Debug(os.Getenv("OS_USERNAME"))
 	provider, err := openstack.AuthenticatedClient(opts)
 	if err != nil {
 		return nil, err
