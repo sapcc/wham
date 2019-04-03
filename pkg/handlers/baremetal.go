@@ -49,7 +49,11 @@ var alertsCounter = prometheus.NewCounter(prometheus.CounterOpts{
 	Help:      "Number of webhooks received by this handler",
 })
 
-func NewBaremetalHandler(ctx context.Context) (*Baremetal, error) {
+func init() {
+	Register("baremetal", NewBaremetalHandler)
+}
+
+func NewBaremetalHandler(ctx context.Context) (Handler, error) {
 	opts, err := openstack.AuthOptionsFromEnv()
 	if err != nil {
 		return nil, err
@@ -81,7 +85,7 @@ func NewBaremetalHandler(ctx context.Context) (*Baremetal, error) {
 		"component": "baremetal_handler",
 	})
 
-	return &Baremetal{
+	return Baremetal{
 		ServiceClient: &gophercloud.ServiceClient{
 			ProviderClient: provider,
 			Endpoint:       url,

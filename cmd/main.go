@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -26,17 +27,18 @@ type (
 	}
 )
 
-var conf config.Config
+var opts config.Options
 
 func init() {
-	flag.StringVar(&conf.DebugLevel, "debug-level", "info", "To set Log Level: development or production")
-	flag.IntVar(&conf.MetricPort, "metric-port", 9090, "Prometheus metric port")
-	flag.IntVar(&conf.ListenPort, "listen-port", 8080, "Webhook listen port")
+	flag.StringVar(&opts.DebugLevel, "debug-level", "info", "To set Log Level: development or production")
+	flag.IntVar(&opts.MetricPort, "metric-port", 9090, "Prometheus metric port")
+	flag.IntVar(&opts.ListenPort, "listen-port", 8080, "Webhook listen port")
+	flag.StringVar(&opts.ConfigFilePath, "config-file", "./etc/wham.yaml", "Path to the config file")
 	flag.Parse()
 
 	log.SetFormatter(&log.JSONFormatter{})
 	log.SetOutput(os.Stdout)
-	lvl, err := log.ParseLevel(conf.DebugLevel)
+	lvl, err := log.ParseLevel(opts.DebugLevel)
 	if err != nil {
 		lvl = log.InfoLevel
 	}
@@ -50,14 +52,17 @@ func main() {
 
 	wg := &sync.WaitGroup{}
 
-	manager, err := handlers.NewManager(ctx, conf)
+	manager := handlers.New(ctx, opts)
+
+	cfg, err := config.GetConfig(opts)
 	if err != nil {
-		log.Error(err)
-		cancel()
+		log.Error(err.Error())
 		os.Exit(1)
 	}
-	go manager.Run(wg)
-	go metrics.Serve(conf)
+	fmt.Println(cfg.Handlers)
+
+	go manager.Start(wg, cfg.Handlers)
+	go metrics.Serve(opts)
 
 	defer func() {
 		signal.Stop(sigs)

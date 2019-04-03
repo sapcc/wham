@@ -10,20 +10,20 @@ import (
 
 type API struct {
 	*mux.Router
-	Config config.Config
+	opts config.Options
 }
 
-func NewAPI(config config.Config) *API {
+func NewAPI(opts config.Options) *API {
 	api := &API{
 		mux.NewRouter().StrictSlash(false),
-		config,
+		opts,
 	}
 
 	return api
 }
 
 func (a *API) Serve() error {
-	host := fmt.Sprintf("0.0.0.0:%d", a.Config.ListenPort)
+	host := fmt.Sprintf("0.0.0.0:%d", a.opts.ListenPort)
 	return http.ListenAndServe(host, a)
 }
 

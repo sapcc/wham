@@ -11,7 +11,7 @@ import (
 )
 
 // Serve ...
-func Serve(opts config.Config) {
+func Serve(opts config.Options) {
 	logger := log.WithFields(log.Fields{
 		"component": "metrics",
 	})
