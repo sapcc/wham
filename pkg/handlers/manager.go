@@ -19,7 +19,7 @@ func NewManager(ctx context.Context, c config.Config) (*Manager, error) {
 	var handlers []Handler
 	bm, err := NewBaremetalHandler(ctx)
 	if err != nil {
-		log.Fatal("API failed with", "err", err)
+		log.Fatal("Failed creating handler", err)
 		return nil, err
 	}
 	handlers = append(handlers, bm)
@@ -37,13 +37,13 @@ func (m Manager) Run(wg *sync.WaitGroup) {
 	wg.Add(1)
 	api := api.NewAPI(m.config)
 
-	go func() {
-		if err := api.Serve(); err != nil {
-			log.Fatal("API failed with", "err", err)
-		}
-	}()
-
 	for _, handler := range m.handlers {
 		go handler.Run(api, wg)
 	}
+
+	go func() {
+		if err := api.Serve(); err != nil {
+			log.Fatal("API failed with", err)
+		}
+	}()
 }
