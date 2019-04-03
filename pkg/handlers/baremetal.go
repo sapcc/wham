@@ -50,7 +50,7 @@ var alertsCounter = prometheus.NewCounter(prometheus.CounterOpts{
 
 func NewBaremetalHandler(ctx context.Context) (*Baremetal, error) {
 	opts, err := openstack.AuthOptionsFromEnv()
-	log.Debug(opts)
+	log.Debug(opts.Username)
 	provider, err := openstack.AuthenticatedClient(opts)
 	if err != nil {
 		return nil, err
@@ -60,6 +60,7 @@ func NewBaremetalHandler(ctx context.Context) (*Baremetal, error) {
 	eo.ApplyDefaults(serviceType)
 
 	url, err := provider.EndpointLocator(eo)
+	log.Debug(url)
 	if err != nil {
 		return nil, err
 	}
