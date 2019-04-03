@@ -22,6 +22,7 @@ package handlers
 import (
 	"context"
 	"errors"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -56,7 +57,7 @@ func NewBaremetalHandler(ctx context.Context) (*Baremetal, error) {
 	opts.AllowReauth = true
 	opts.Scope = &gophercloud.AuthScope{
 		ProjectName: opts.TenantName,
-		DomainName:  opts.DomainName,
+		DomainName:  os.Getenv("OS_PROJECT_DOMAIN_NAME"),
 	}
 	provider, err := openstack.AuthenticatedClient(opts)
 	if err != nil {
