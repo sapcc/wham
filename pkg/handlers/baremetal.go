@@ -50,6 +50,7 @@ var alertsCounter = prometheus.NewCounter(prometheus.CounterOpts{
 
 func NewBaremetalHandler(ctx context.Context) (*Baremetal, error) {
 	opts, err := openstack.AuthOptionsFromEnv()
+	log.Debug(opts)
 	provider, err := openstack.AuthenticatedClient(opts)
 	if err != nil {
 		return nil, err
