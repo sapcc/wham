@@ -180,11 +180,6 @@ func (c Baremetal) setNodeInMaintenance(node *nodes.Node) error {
 				Path:  "/maintenance",
 				Value: "true",
 			},
-			nodes.UpdateOperation{
-				Op:    nodes.AddOp,
-				Path:  "/maintenance",
-				Value: "{'reason': 'IPMI Hardware ERROR. Please check metal alerts'}",
-			},
 		}).Extract()
 
 		if err != nil && updated.Maintenance {
