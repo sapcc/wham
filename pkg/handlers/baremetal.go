@@ -43,6 +43,10 @@ type Baremetal struct {
 	log *log.Entry
 }
 
+type maintenanceReason struct {
+	Reason string `json:"reason"`
+}
+
 var alertsCounter = prometheus.NewCounter(prometheus.CounterOpts{
 	Namespace: "monsoon3",
 	Name:      "am_webhooks_bm_total",
@@ -188,6 +192,34 @@ func (c Baremetal) setNodeInMaintenance(node *nodes.Node) error {
 		} else {
 			return err
 		}
+
+		updated, err = c.setNodeMaintenanceReason(node.UUID, maintenanceReason{
+			Reason: "IPMI Hardware ERROR. Please check metal alerts",
+		}).Extract()
+
+		if err != nil && len(updated.MaintenanceReason) > 0 {
+			c.log.Infof("Successfuly set node %s maintenance_reason", node.UUID)
+		} else {
+			return err
+		}
+
 	}
 	return nil
+}
+
+func (c Baremetal) setNodeMaintenanceReason(id string, reason maintenanceReason) (r nodes.UpdateResult) {
+	url := c.ServiceClient.ServiceURL("nodes", id) + "/maintenance"
+	resp, err := c.ServiceClient.Request("PUT", url, &gophercloud.RequestOpts{
+		JSONBody: reason,
+		OkCodes:  []int{200},
+	})
+
+	if err != nil {
+		r.Err = err
+	} else {
+		r.Body = resp.Body
+		r.Header = resp.Header
+	}
+
+	return
 }
