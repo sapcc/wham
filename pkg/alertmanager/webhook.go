@@ -37,7 +37,7 @@ func HandleWebhookAlerts(counter prometheus.Counter, alerts chan<- template.Aler
 		}
 
 		for _, alert := range data.Alerts {
-			log.Printf("Alert: status=%s,Labels=%v,Annotations=%v", alert.Status, alert.Labels, alert.Annotations)
+			log.Debugf("Alert: status=%s,Labels=%v,Annotations=%v", alert.Status, alert.Labels, alert.Annotations)
 			alerts <- alert
 		}
 		toJSON(w, http.StatusOK, "success")

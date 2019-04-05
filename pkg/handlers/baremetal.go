@@ -128,17 +128,11 @@ func (c Baremetal) Run(a *api.API, wg *sync.WaitGroup) error {
 }
 
 func (c Baremetal) alert(alert template.Alert) error {
-	r, _ := regexp.Compile("server_id: (([a-z0-9]*-){4}[a-z0-9]*)")
-	meta, isset := alert.Labels["meta"]
-	if !isset {
-		return errors.New("Missing server id")
+	nodeID, err := c.getNodeID(alert)
+	if err != nil {
+		return err
 	}
-	match := r.FindStringSubmatch(meta)
-	if len(match) < 1 {
-		return errors.New("Missing server id")
-	}
-	serverID := match[1]
-	node, err := c.getNode(serverID)
+	node, err := c.getNode(nodeID)
 	if err != nil {
 		return err
 	}
@@ -146,6 +140,23 @@ func (c Baremetal) alert(alert template.Alert) error {
 		return err
 	}
 	return nil
+}
+
+func (c Baremetal) getNodeID(a template.Alert) (nodeID string, err error) {
+	r, _ := regexp.Compile("server_id: (([a-z0-9]*-){4}[a-z0-9]*)")
+	meta, isset := a.Labels["meta"]
+	if !isset {
+		return nodeID, errors.New("Missing server id")
+	}
+	match := r.FindStringSubmatch(meta)
+	if len(match) < 1 {
+		return nodeID, errors.New("Missing server id")
+	}
+	nodeID = match[1]
+	c.log.Debugf("found server id %s in alert", nodeID)
+
+	return nodeID, nil
+
 }
 
 func (c Baremetal) getNode(id string) (*nodes.Node, error) {
@@ -161,10 +172,12 @@ func (c Baremetal) setNodeInMaintenance(node *nodes.Node) error {
 	if node.ProvisionState != nodes.Active {
 		updated, err := nodes.Update(c.ServiceClient, node.InstanceUUID, nodes.UpdateOpts{
 			nodes.UpdateOperation{
+				Op:    nodes.AddOp,
 				Path:  "/maintenance",
 				Value: "true",
 			},
 			nodes.UpdateOperation{
+				Op:    nodes.AddOp,
 				Path:  "/maintenance_reason",
 				Value: "IPMI Hardware ERROR. Please check metal alerts",
 			},
