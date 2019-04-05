@@ -137,19 +137,19 @@ func (c Baremetal) Run(a *api.API, wg *sync.WaitGroup) error {
 	}
 }
 
-func (c Baremetal) alert(alert template.Alert) error {
+func (c Baremetal) alert(alert template.Alert) (err error) {
 	nodeID, err := c.getNodeID(alert)
 	if err != nil {
-		return err
+		return
 	}
 	node, err := c.getNode(nodeID)
 	if err != nil {
-		return err
+		return
 	}
 	if err := c.setNodeInMaintenance(node); err != nil {
 		return err
 	}
-	return nil
+	return
 }
 
 func (c Baremetal) getNodeID(a template.Alert) (nodeID string, err error) {
@@ -165,20 +165,20 @@ func (c Baremetal) getNodeID(a template.Alert) (nodeID string, err error) {
 	nodeID = match[1]
 	c.log.Debugf("found server id %s in alert", nodeID)
 
-	return nodeID, nil
+	return nodeID, err
 
 }
 
-func (c Baremetal) getNode(id string) (*nodes.Node, error) {
-	actual, err := nodes.Get(c.ServiceClient, id).Extract()
+func (c Baremetal) getNode(id string) (node *nodes.Node, err error) {
+	node, err = nodes.Get(c.ServiceClient, id).Extract()
 	if err != nil {
-		return nil, err
+		return node, err
 	}
 
-	return actual, nil
+	return node, err
 }
 
-func (c Baremetal) setNodeInMaintenance(node *nodes.Node) error {
+func (c Baremetal) setNodeInMaintenance(node *nodes.Node) (err error) {
 	if node.ProvisionState == nodes.Active {
 		return fmt.Errorf("node %s: Cannot set Active node into maintenance", node.UUID)
 	}
@@ -196,7 +196,7 @@ func (c Baremetal) setNodeInMaintenance(node *nodes.Node) error {
 		if err == nil {
 			return fmt.Errorf("node %s: unable to into maintenace", node.UUID)
 		}
-		return err
+		return
 	}
 
 	updated, err = c.setNodeMaintenanceReason(node.UUID, maintenanceReason{
@@ -209,18 +209,20 @@ func (c Baremetal) setNodeInMaintenance(node *nodes.Node) error {
 		if err == nil {
 			return fmt.Errorf("Could not set node: %s maintenance reason", node.UUID)
 		}
-		return err
+		return
 	}
 
-	return nil
+	return
 }
 
 func (c Baremetal) setNodeMaintenanceReason(id string, reason maintenanceReason) (r nodes.UpdateResult) {
 	url := c.ServiceClient.ServiceURL("nodes", id) + "/maintenance"
 	resp, err := c.ServiceClient.Request("PUT", url, &gophercloud.RequestOpts{
 		JSONBody: reason,
-		OkCodes:  []int{202, 200},
+		OkCodes:  []int{200, 202},
 	})
+
+	defer resp.Body.Close()
 
 	if err != nil {
 		r.Err = err
