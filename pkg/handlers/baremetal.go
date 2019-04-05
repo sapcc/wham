@@ -172,12 +172,12 @@ func (c Baremetal) setNodeInMaintenance(node *nodes.Node) error {
 	if node.ProvisionState != nodes.Active {
 		updated, err := nodes.Update(c.ServiceClient, node.InstanceUUID, nodes.UpdateOpts{
 			nodes.UpdateOperation{
-				Op:    nodes.AddOp,
+				Op:    nodes.ReplaceOp,
 				Path:  "/maintenance",
 				Value: "true",
 			},
 			nodes.UpdateOperation{
-				Op:    nodes.AddOp,
+				Op:    nodes.ReplaceOp,
 				Path:  "/maintenance_reason",
 				Value: "IPMI Hardware ERROR. Please check metal alerts",
 			},
