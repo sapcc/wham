@@ -38,21 +38,26 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type Baremetal struct {
-	*gophercloud.ServiceClient
-	ctx context.Context
-	log *log.Entry
-}
+type (
+	Baremetal struct {
+		*gophercloud.ServiceClient
+		ctx context.Context
+		log *log.Entry
+	}
 
-type maintenanceReason struct {
-	Reason string `json:"reason"`
-}
+	maintenanceReason struct {
+		Reason string `json:"reason"`
+	}
+)
 
-var alertsCounter = prometheus.NewCounter(prometheus.CounterOpts{
-	Namespace: "monsoon3",
-	Name:      "am_webhooks_bm_total",
-	Help:      "Number of webhooks received by this handler",
-})
+var (
+	maintenanceReasonText = "IPMI Hardware Error Alert. Please check alerts in channel: alert-metal-info"
+	alertsCounter         = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "monsoon3",
+		Name:      "am_webhooks_bm_total",
+		Help:      "Number of webhooks received by this handler",
+	})
+)
 
 func init() {
 	Register("baremetal", NewBaremetalHandler)
@@ -115,7 +120,7 @@ func (c Baremetal) Run(a *api.API, wg *sync.WaitGroup) error {
 		case a := <-alerts:
 			service := a.Labels["service"]
 			severity := a.Labels["severity"]
-			log.Debugf("New Alert: Service: %s, Severity %s ", service, severity)
+			c.log.Debugf("New Alert: Service: %s, Severity %s ", service, severity)
 			switch strings.ToUpper(severity) {
 			case "CRITICAL":
 				if err := c.alert(a); err != nil {
@@ -174,38 +179,39 @@ func (c Baremetal) getNode(id string) (*nodes.Node, error) {
 }
 
 func (c Baremetal) setNodeInMaintenance(node *nodes.Node) error {
-	if node.ProvisionState != nodes.Active {
-		updated, err := nodes.Update(c.ServiceClient, node.UUID, nodes.UpdateOpts{
-			nodes.UpdateOperation{
-				Op:    nodes.ReplaceOp,
-				Path:  "/maintenance",
-				Value: "true",
-			},
-		}).Extract()
-
-		if err == nil && updated.Maintenance {
-			c.log.Infof("Successfuly set node %s to maintenance", node.UUID)
-		} else {
-			if err == nil {
-				return fmt.Errorf("Could not set node: %s in maintenace", node.UUID)
-			}
-			return err
-		}
-
-		updated, err = c.setNodeMaintenanceReason(node.UUID, maintenanceReason{
-			Reason: "IPMI Hardware ERROR. Please check metal alerts",
-		}).Extract()
-
-		if err == nil && len(updated.MaintenanceReason) > 0 {
-			c.log.Infof("Successfuly set node %s maintenance_reason", node.UUID)
-		} else {
-			if err == nil {
-				return fmt.Errorf("Could not set node: %s maintenance reason", node.UUID)
-			}
-			return err
-		}
-
+	if node.ProvisionState == nodes.Active {
+		return fmt.Errorf("node %s: Cannot set Active node into maintenance", node.UUID)
 	}
+	updated, err := nodes.Update(c.ServiceClient, node.UUID, nodes.UpdateOpts{
+		nodes.UpdateOperation{
+			Op:    nodes.ReplaceOp,
+			Path:  "/maintenance",
+			Value: "true",
+		},
+	}).Extract()
+
+	if err == nil && updated.Maintenance {
+		c.log.Infof("node %s: successfuly put into maintenance", node.UUID)
+	} else {
+		if err == nil {
+			return fmt.Errorf("node %s: unable to into maintenace", node.UUID)
+		}
+		return err
+	}
+
+	updated, err = c.setNodeMaintenanceReason(node.UUID, maintenanceReason{
+		Reason: maintenanceReasonText,
+	}).Extract()
+
+	if err == nil && len(updated.MaintenanceReason) > 0 {
+		c.log.Infof("node %s: successfuly set maintenance_reason", node.UUID)
+	} else {
+		if err == nil {
+			return fmt.Errorf("Could not set node: %s maintenance reason", node.UUID)
+		}
+		return err
+	}
+
 	return nil
 }
 
@@ -213,7 +219,7 @@ func (c Baremetal) setNodeMaintenanceReason(id string, reason maintenanceReason)
 	url := c.ServiceClient.ServiceURL("nodes", id) + "/maintenance"
 	resp, err := c.ServiceClient.Request("PUT", url, &gophercloud.RequestOpts{
 		JSONBody: reason,
-		OkCodes:  []int{200},
+		OkCodes:  []int{202, 200},
 	})
 
 	if err != nil {

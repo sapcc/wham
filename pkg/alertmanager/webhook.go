@@ -17,6 +17,10 @@ type (
 	}
 )
 
+var ctxLog = log.WithFields(log.Fields{
+	"component": "webhook",
+})
+
 func HandleWebhookAlerts(counter prometheus.Counter, alerts chan<- template.Alert) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -37,7 +41,7 @@ func HandleWebhookAlerts(counter prometheus.Counter, alerts chan<- template.Aler
 		}
 
 		for _, alert := range data.Alerts {
-			log.Debugf("Alert: status=%s,Labels=%v,Annotations=%v", alert.Status, alert.Labels, alert.Annotations)
+			ctxLog.Debugf("Alert: status=%s,Labels=%v,Annotations=%v", alert.Status, alert.Labels, alert.Annotations)
 			alerts <- alert
 		}
 		toJSON(w, http.StatusOK, "success")

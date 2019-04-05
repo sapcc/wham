@@ -12,12 +12,12 @@ import (
 
 // Serve ...
 func Serve(opts config.Options) {
-	logger := log.WithFields(log.Fields{
+	ctxLog := log.WithFields(log.Fields{
 		"component": "metrics",
 	})
 	host := "0.0.0.0"
 
-	logger.Infof("exposing prometheus metrics on port: %d", opts.MetricPort)
+	ctxLog.Infof("exposing prometheus metrics on port: %d", opts.MetricPort)
 
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%v", host, opts.MetricPort))
 	defer listener.Close()
@@ -25,6 +25,6 @@ func Serve(opts config.Options) {
 	if err == nil {
 		http.Serve(listener, promhttp.Handler())
 	} else {
-		logger.Error("exposing prometheus metrics failed", err)
+		ctxLog.Error("exposing prometheus metrics failed", err)
 	}
 }
