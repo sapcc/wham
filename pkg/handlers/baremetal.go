@@ -22,6 +22,7 @@ package handlers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -182,10 +183,12 @@ func (c Baremetal) setNodeInMaintenance(node *nodes.Node) error {
 			},
 		}).Extract()
 
-		c.log.Debugf("Maintenance %s, Error: %s", updated.Maintenance, err)
-		if err != nil && updated.Maintenance {
+		if err == nil && updated.Maintenance {
 			c.log.Infof("Successfuly set node %s to maintenance", node.UUID)
 		} else {
+			if err == nil {
+				return fmt.Errorf("Could not set node: %s in maintenace", node.UUID)
+			}
 			return err
 		}
 
@@ -193,9 +196,12 @@ func (c Baremetal) setNodeInMaintenance(node *nodes.Node) error {
 			Reason: "IPMI Hardware ERROR. Please check metal alerts",
 		}).Extract()
 
-		if err != nil && len(updated.MaintenanceReason) > 0 {
+		if err == nil && len(updated.MaintenanceReason) > 0 {
 			c.log.Infof("Successfuly set node %s maintenance_reason", node.UUID)
 		} else {
+			if err == nil {
+				return fmt.Errorf("Could not set node: %s maintenance reason", node.UUID)
+			}
 			return err
 		}
 
