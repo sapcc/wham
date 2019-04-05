@@ -182,7 +182,7 @@ func (c Baremetal) setNodeInMaintenance(node *nodes.Node) error {
 			},
 		}).Extract()
 
-		c.log.Debugf("Maintenance %s, Error: %s", updated.Maintenance, err.Error())
+		c.log.Debugf("Maintenance %s, Error: %s", updated.Maintenance, err)
 		if err != nil && updated.Maintenance {
 			c.log.Infof("Successfuly set node %s to maintenance", node.UUID)
 		} else {
