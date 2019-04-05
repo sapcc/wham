@@ -170,7 +170,7 @@ func (c Baremetal) getNode(id string) (*nodes.Node, error) {
 
 func (c Baremetal) setNodeInMaintenance(node *nodes.Node) error {
 	if node.ProvisionState != nodes.Active {
-		updated, err := nodes.Update(c.ServiceClient, node.InstanceUUID, nodes.UpdateOpts{
+		updated, err := nodes.Update(c.ServiceClient, node.UUID, nodes.UpdateOpts{
 			nodes.UpdateOperation{
 				Op:    nodes.ReplaceOp,
 				Path:  "/maintenance",
@@ -184,7 +184,7 @@ func (c Baremetal) setNodeInMaintenance(node *nodes.Node) error {
 		}).Extract()
 
 		if err != nil && updated.Maintenance {
-			c.log.Infof("Successfuly set node %s to maintenance", node.InstanceUUID)
+			c.log.Infof("Successfuly set node %s to maintenance", node.UUID)
 		} else {
 			return err
 		}
