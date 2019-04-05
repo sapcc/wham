@@ -199,23 +199,20 @@ func (c Baremetal) setNodeInMaintenance(node *nodes.Node) (err error) {
 		return
 	}
 
-	updated, err = c.setNodeMaintenanceReason(node.UUID, maintenanceReason{
+	err = c.setNodeMaintenanceReason(node.UUID, maintenanceReason{
 		Reason: maintenanceReasonText,
-	}).Extract()
+	})
 
-	if err == nil && len(updated.MaintenanceReason) > 0 {
+	if err == nil {
 		c.log.Infof("node %s: successfuly set maintenance_reason", node.UUID)
 	} else {
-		if err == nil {
-			return fmt.Errorf("Could not set node: %s maintenance reason", node.UUID)
-		}
-		return
+		return fmt.Errorf("Could not set node: %s maintenance reason. Error %s", node.UUID, err.Error())
 	}
 
 	return
 }
 
-func (c Baremetal) setNodeMaintenanceReason(id string, reason maintenanceReason) (r nodes.UpdateResult) {
+func (c Baremetal) setNodeMaintenanceReason(id string, reason maintenanceReason) (err error) {
 	url := c.ServiceClient.ServiceURL("nodes", id) + "/maintenance"
 	resp, err := c.ServiceClient.Request("PUT", url, &gophercloud.RequestOpts{
 		JSONBody: reason,
@@ -225,10 +222,7 @@ func (c Baremetal) setNodeMaintenanceReason(id string, reason maintenanceReason)
 	defer resp.Body.Close()
 
 	if err != nil {
-		r.Err = err
-	} else {
-		r.Body = resp.Body
-		r.Header = resp.Header
+		return
 	}
 
 	return
