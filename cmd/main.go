@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -33,7 +32,7 @@ func init() {
 	flag.StringVar(&opts.DebugLevel, "debug-level", "info", "To set Log Level: development or production")
 	flag.IntVar(&opts.MetricPort, "metric-port", 9090, "Prometheus metric port")
 	flag.IntVar(&opts.ListenPort, "listen-port", 8080, "Webhook listen port")
-	flag.StringVar(&opts.ConfigFilePath, "config-file", "/etc/config/wham.yaml", "Path to the config file")
+	flag.StringVar(&opts.ConfigFilePath, "config-file", "./etc/config/wham.yaml", "Path to the config file")
 	flag.Parse()
 
 	log.SetFormatter(&log.JSONFormatter{})
@@ -59,9 +58,8 @@ func main() {
 		log.Error(err.Error())
 		os.Exit(1)
 	}
-	fmt.Println(cfg.Handlers)
 
-	go manager.Start(wg, cfg.Handlers)
+	go manager.Start(wg, cfg)
 	go metrics.Serve(opts)
 
 	defer func() {

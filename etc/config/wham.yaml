@@ -1,2 +1,7 @@
 handlers:
-    - "baremetal"
+  baremetal:
+      regions:
+        qa-de-1:
+          user: "Test"
+          password: "some_password"
+          auth_url: "https://identity-3.qa-de-1.cloud.sap/v3"

@@ -21,7 +21,6 @@ package handlers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"regexp"
@@ -43,10 +42,21 @@ type (
 		*gophercloud.ServiceClient
 		ctx context.Context
 		log *log.Entry
+		cfg bmConfig
 	}
 
 	maintenanceReason struct {
 		Reason string `json:"reason"`
+	}
+
+	bmConfig struct {
+		Regions map[string]region `json:"regions"`
+	}
+
+	region struct {
+		User     string `json:"user"`
+		Password string `json:"password"`
+		AuthURL  string `json:"auth_url"`
 	}
 )
 
@@ -61,29 +71,12 @@ var (
 
 func init() {
 	Register("baremetal", NewBaremetalHandler)
+
 }
 
-func NewBaremetalHandler(ctx context.Context) (Handler, error) {
-	opts, err := openstack.AuthOptionsFromEnv()
-	if err != nil {
-		return nil, err
-	}
-	opts.AllowReauth = true
-	opts.Scope = &gophercloud.AuthScope{
-		ProjectName: opts.TenantName,
-		DomainName:  os.Getenv("OS_PROJECT_DOMAIN_NAME"),
-	}
-	provider, err := openstack.AuthenticatedClient(opts)
-	if err != nil {
-		return nil, err
-	}
-	serviceType := "baremetal"
-	eo := gophercloud.EndpointOpts{Availability: gophercloud.AvailabilityPublic}
-	eo.ApplyDefaults(serviceType)
-
-	url, err := provider.EndpointLocator(eo)
-	log.Debug(url)
-	if err != nil {
+func NewBaremetalHandler(ctx context.Context, handler interface{}) (Handler, error) {
+	var cfg bmConfig
+	if err := UnmarshalHandler(handler, &cfg); err != nil {
 		return nil, err
 	}
 
@@ -96,13 +89,9 @@ func NewBaremetalHandler(ctx context.Context) (Handler, error) {
 	})
 
 	return Baremetal{
-		ServiceClient: &gophercloud.ServiceClient{
-			ProviderClient: provider,
-			Endpoint:       url,
-			Type:           serviceType,
-		},
 		ctx: ctx,
 		log: contextLogger,
+		cfg: cfg,
 	}, nil
 }
 
@@ -137,8 +126,17 @@ func (c Baremetal) Run(a *api.API, wg *sync.WaitGroup) error {
 	}
 }
 
-func (c Baremetal) alert(alert template.Alert) (err error) {
-	nodeID, err := c.getNodeID(alert)
+func (c Baremetal) alert(a template.Alert) (err error) {
+	name := a.Labels["alertname"]
+	region, isset := a.Labels["region"]
+	if !isset {
+		return fmt.Errorf("No region set in alert %s", name)
+	}
+	if err := c.setClient(region); err != nil {
+		return err
+	}
+
+	nodeID, err := c.getNodeID(a)
 	if err != nil {
 		return
 	}
@@ -153,20 +151,61 @@ func (c Baremetal) alert(alert template.Alert) (err error) {
 }
 
 func (c Baremetal) getNodeID(a template.Alert) (nodeID string, err error) {
+	name := a.Labels["alertname"]
 	r, _ := regexp.Compile("server_id: (([a-z0-9]*-){4}[a-z0-9]*)")
 	meta, isset := a.Labels["meta"]
 	if !isset {
-		return nodeID, errors.New("Missing server id")
+		return nodeID, fmt.Errorf("Missing server id in alert %s", name)
 	}
 	match := r.FindStringSubmatch(meta)
 	if len(match) < 1 {
-		return nodeID, errors.New("Missing server id")
+		return nodeID, fmt.Errorf("Missing server id in alert %s", name)
 	}
 	nodeID = match[1]
 	c.log.Debugf("found server id %s in alert", nodeID)
 
 	return nodeID, err
 
+}
+
+func (c Baremetal) setClient(region string) (err error) {
+
+	cfg := c.cfg.Regions[region]
+
+	os.Setenv("OS_AUTH_URL", cfg.AuthURL)
+	os.Setenv("OS_USERNAME", cfg.User)
+	os.Setenv("OS_PASSWORD", cfg.Password)
+
+	opts, err := openstack.AuthOptionsFromEnv()
+	if err != nil {
+		return
+	}
+	opts.AllowReauth = true
+	opts.Scope = &gophercloud.AuthScope{
+		ProjectName: opts.TenantName,
+		DomainName:  os.Getenv("OS_PROJECT_DOMAIN_NAME"),
+	}
+	provider, err := openstack.AuthenticatedClient(opts)
+	if err != nil {
+		return
+	}
+	serviceType := "baremetal"
+	eo := gophercloud.EndpointOpts{Availability: gophercloud.AvailabilityPublic}
+	eo.ApplyDefaults(serviceType)
+
+	url, err := provider.EndpointLocator(eo)
+	log.Debug(url)
+	if err != nil {
+		return
+	}
+
+	c.ServiceClient = &gophercloud.ServiceClient{
+		ProviderClient: provider,
+		Endpoint:       url,
+		Type:           serviceType,
+	}
+
+	return
 }
 
 func (c Baremetal) getNode(id string) (node *nodes.Node, err error) {

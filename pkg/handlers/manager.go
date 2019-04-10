@@ -9,6 +9,7 @@ import (
 	"github.com/sapcc/wham/pkg/api"
 	"github.com/sapcc/wham/pkg/config"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
 )
 
 type Manager struct {
@@ -16,7 +17,7 @@ type Manager struct {
 	ctx  context.Context
 	log  *log.Entry
 }
-type HandlerFactory func(ctx context.Context) (Handler, error)
+type HandlerFactory func(ctx context.Context, config interface{}) (Handler, error)
 
 var handlerFactories = make(map[string]HandlerFactory)
 
@@ -45,16 +46,16 @@ func Register(name string, factory HandlerFactory) {
 	handlerFactories[name] = factory
 }
 
-func (m Manager) CreateHandler(handlerName string) (Handler, error) {
+func (m Manager) CreateHandler(name string, handler interface{}) (Handler, error) {
 
-	handlerFactory, ok := handlerFactories[handlerName]
+	handlerFactory, ok := handlerFactories[name]
 	if !ok {
 		availableHandlers := m.getHandlers()
 		return nil, fmt.Errorf(fmt.Sprintf("Invalid Handler name. Must be one of: %s", strings.Join(availableHandlers, ", ")))
 	}
 
 	// Run the factory with the configuration.
-	return handlerFactory(m.ctx)
+	return handlerFactory(m.ctx, handler)
 }
 
 func (m Manager) getHandlers() []string {
@@ -66,14 +67,14 @@ func (m Manager) getHandlers() []string {
 }
 
 // Run starts the manager and its handlers
-func (m Manager) Start(wg *sync.WaitGroup, handlers []string) {
+func (m Manager) Start(wg *sync.WaitGroup, cfg config.Config) {
 	defer wg.Done()
 	wg.Add(1)
 	api := api.NewAPI(m.opts)
 
-	for _, name := range handlers {
+	for name, handler := range cfg.Handlers {
 		log.Info("loading handler: ", name)
-		h, err := m.CreateHandler(name)
+		h, err := m.CreateHandler(name, handler)
 
 		if err != nil {
 			log.Error(err)
@@ -86,4 +87,13 @@ func (m Manager) Start(wg *sync.WaitGroup, handlers []string) {
 			log.Fatal("API failed with", err)
 		}
 	}()
+}
+
+func UnmarshalHandler(handlerIn, handlerOut interface{}) error {
+
+	h, err := yaml.Marshal(handlerIn)
+	if err != nil {
+		return err
+	}
+	return yaml.Unmarshal(h, handlerOut)
 }

@@ -26,11 +26,13 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type config struct {
-	Handlers []string `yaml:"handlers"`
+type Config struct {
+	Name     string                 `yaml:"name"`
+	Version  string                 `yaml:"version"`
+	Handlers map[string]interface{} `yaml:"handlers"`
 }
 
-func GetConfig(opts Options) (cfg config, err error) {
+func GetConfig(opts Options) (cfg Config, err error) {
 	if opts.ConfigFilePath == "" {
 		return cfg, nil
 	}
