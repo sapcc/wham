@@ -172,9 +172,13 @@ func (c Baremetal) setClient(region string) (err error) {
 
 	cfg := c.cfg.Regions[region]
 
+	c.log.Debug(cfg.AuthURL)
+
 	os.Setenv("OS_AUTH_URL", cfg.AuthURL)
 	os.Setenv("OS_USERNAME", cfg.User)
 	os.Setenv("OS_PASSWORD", cfg.Password)
+
+	c.log.Debug(os.Getenv("OS_AUTH_URL"))
 
 	opts, err := openstack.AuthOptionsFromEnv()
 	if err != nil {
