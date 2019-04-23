@@ -50,13 +50,13 @@ type (
 	}
 
 	bmConfig struct {
-		Regions map[string]region `json:"regions"`
+		Regions map[string]region `yaml:"regions"`
 	}
 
 	region struct {
-		User     string `json:"user"`
-		Password string `json:"password"`
-		AuthURL  string `json:"auth_url"`
+		User     string `yaml:"user"`
+		Password string `yaml:"password"`
+		AuthURL  string `yaml:"auth_url"`
 	}
 )
 
