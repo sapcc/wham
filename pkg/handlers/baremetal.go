@@ -172,7 +172,7 @@ func (c Baremetal) setClient(region string) (err error) {
 
 	cfg := c.cfg.Regions[region]
 
-	c.log.Debug(cfg.AuthURL)
+	c.log.Debug(region, cfg, cfg.AuthURL, c.cfg.Regions)
 
 	os.Setenv("OS_AUTH_URL", cfg.AuthURL)
 	os.Setenv("OS_USERNAME", cfg.User)
