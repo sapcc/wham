@@ -88,7 +88,7 @@ func NewBaremetalHandler(ctx context.Context, handler interface{}) (Handler, err
 		"component": "baremetal_handler",
 	})
 
-	return Baremetal{
+	return &Baremetal{
 		ctx: ctx,
 		log: contextLogger,
 		cfg: cfg,
@@ -96,7 +96,7 @@ func NewBaremetalHandler(ctx context.Context, handler interface{}) (Handler, err
 }
 
 //Run imlements the handler interface
-func (c Baremetal) Run(a *api.API, wg *sync.WaitGroup) error {
+func (c *Baremetal) Run(a *api.API, wg *sync.WaitGroup) error {
 	wg.Add(1)
 	defer wg.Done()
 	alerts := make(chan template.Alert)
@@ -126,7 +126,7 @@ func (c Baremetal) Run(a *api.API, wg *sync.WaitGroup) error {
 	}
 }
 
-func (c Baremetal) alert(a template.Alert) (err error) {
+func (c *Baremetal) alert(a template.Alert) (err error) {
 	name := a.Labels["alertname"]
 	region, isset := a.Labels["region"]
 	if !isset {
@@ -150,7 +150,7 @@ func (c Baremetal) alert(a template.Alert) (err error) {
 	return
 }
 
-func (c Baremetal) getNodeID(a template.Alert) (nodeID string, err error) {
+func (c *Baremetal) getNodeID(a template.Alert) (nodeID string, err error) {
 	name := a.Labels["alertname"]
 	r, _ := regexp.Compile("server_id: (([a-z0-9]*-){4}[a-z0-9]*)")
 	meta, isset := a.Labels["meta"]
@@ -168,7 +168,7 @@ func (c Baremetal) getNodeID(a template.Alert) (nodeID string, err error) {
 
 }
 
-func (c Baremetal) setClient(region string) (err error) {
+func (c *Baremetal) setClient(region string) (err error) {
 
 	cfg := c.cfg.Regions[region]
 
@@ -198,7 +198,7 @@ func (c Baremetal) setClient(region string) (err error) {
 	eo.ApplyDefaults(serviceType)
 
 	url, err := provider.EndpointLocator(eo)
-	log.Debug(url)
+
 	if err != nil {
 		return
 	}
@@ -212,7 +212,7 @@ func (c Baremetal) setClient(region string) (err error) {
 	return
 }
 
-func (c Baremetal) getNode(id string) (node *nodes.Node, err error) {
+func (c *Baremetal) getNode(id string) (node *nodes.Node, err error) {
 	node, err = nodes.Get(c.client, id).Extract()
 	if err != nil {
 		return node, err
@@ -221,7 +221,7 @@ func (c Baremetal) getNode(id string) (node *nodes.Node, err error) {
 	return node, err
 }
 
-func (c Baremetal) setNodeInMaintenance(node *nodes.Node) (err error) {
+func (c *Baremetal) setNodeInMaintenance(node *nodes.Node) (err error) {
 	if node.ProvisionState == nodes.Active {
 		return fmt.Errorf("node %s: Cannot set Active node into maintenance", node.UUID)
 	}
@@ -255,7 +255,7 @@ func (c Baremetal) setNodeInMaintenance(node *nodes.Node) (err error) {
 	return
 }
 
-func (c Baremetal) setNodeMaintenanceReason(id string, reason maintenanceReason) (err error) {
+func (c *Baremetal) setNodeMaintenanceReason(id string, reason maintenanceReason) (err error) {
 	url := c.client.ServiceURL("nodes", id) + "/maintenance"
 	resp, err := c.client.Request("PUT", url, &gophercloud.RequestOpts{
 		JSONBody: reason,
