@@ -39,10 +39,10 @@ import (
 
 type (
 	Baremetal struct {
-		*gophercloud.ServiceClient
-		ctx context.Context
-		log *log.Entry
-		cfg bmConfig
+		client *gophercloud.ServiceClient
+		ctx    context.Context
+		log    *log.Entry
+		cfg    bmConfig
 	}
 
 	maintenanceReason struct {
@@ -203,7 +203,7 @@ func (c Baremetal) setClient(region string) (err error) {
 		return
 	}
 
-	c.ServiceClient = &gophercloud.ServiceClient{
+	c.client = &gophercloud.ServiceClient{
 		ProviderClient: provider,
 		Endpoint:       url,
 		Type:           serviceType,
@@ -213,7 +213,7 @@ func (c Baremetal) setClient(region string) (err error) {
 }
 
 func (c Baremetal) getNode(id string) (node *nodes.Node, err error) {
-	node, err = nodes.Get(c.ServiceClient, id).Extract()
+	node, err = nodes.Get(c.client, id).Extract()
 	if err != nil {
 		return node, err
 	}
@@ -225,7 +225,7 @@ func (c Baremetal) setNodeInMaintenance(node *nodes.Node) (err error) {
 	if node.ProvisionState == nodes.Active {
 		return fmt.Errorf("node %s: Cannot set Active node into maintenance", node.UUID)
 	}
-	updated, err := nodes.Update(c.ServiceClient, node.UUID, nodes.UpdateOpts{
+	updated, err := nodes.Update(c.client, node.UUID, nodes.UpdateOpts{
 		nodes.UpdateOperation{
 			Op:    nodes.ReplaceOp,
 			Path:  "/maintenance",
@@ -256,8 +256,8 @@ func (c Baremetal) setNodeInMaintenance(node *nodes.Node) (err error) {
 }
 
 func (c Baremetal) setNodeMaintenanceReason(id string, reason maintenanceReason) (err error) {
-	url := c.ServiceClient.ServiceURL("nodes", id) + "/maintenance"
-	resp, err := c.ServiceClient.Request("PUT", url, &gophercloud.RequestOpts{
+	url := c.client.ServiceURL("nodes", id) + "/maintenance"
+	resp, err := c.client.Request("PUT", url, &gophercloud.RequestOpts{
 		JSONBody: reason,
 		OkCodes:  []int{200, 202},
 	})
