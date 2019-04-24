@@ -64,7 +64,7 @@ var (
 	maintenanceReasonText = "IPMI Hardware Error Alert. Please check alerts in channel: alert-metal-info"
 	alertsCounter         = prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace: "monsoon3",
-		Name:      "am_webhooks_bm_total",
+		Name:      "wham_ironic_total",
 		Help:      "Number of webhooks received by this handler",
 	})
 )
@@ -172,13 +172,11 @@ func (c *Baremetal) setClient(region string) (err error) {
 
 	cfg := c.cfg.Regions[region]
 
-	c.log.Debug(region, cfg, cfg.AuthURL, c.cfg.Regions)
-
 	os.Setenv("OS_AUTH_URL", cfg.AuthURL)
 	os.Setenv("OS_USERNAME", cfg.User)
 	os.Setenv("OS_PASSWORD", cfg.Password)
 
-	c.log.Debug(os.Getenv("OS_AUTH_URL"))
+	c.log.Debugf("Setting new client for region: %ss", region)
 
 	opts, err := openstack.AuthOptionsFromEnv()
 	if err != nil {

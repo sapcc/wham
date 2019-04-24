@@ -21,13 +21,13 @@ type HandlerFactory func(ctx context.Context, config interface{}) (Handler, erro
 
 var handlerFactories = make(map[string]HandlerFactory)
 
-//NewManager creates new manager object
-func New(ctx context.Context, c config.Options) *Manager {
+//New creates new manager object
+func New(ctx context.Context, cfg config.Options) *Manager {
 	contextLogger := log.WithFields(log.Fields{
 		"component": "manager",
 	})
 	manager := &Manager{
-		c,
+		cfg,
 		ctx,
 		contextLogger,
 	}
