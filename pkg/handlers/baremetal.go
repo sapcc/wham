@@ -165,8 +165,11 @@ func (c *Baremetal) getNodeID(a template.Alert) (nodeID string, err error) {
 }
 
 func (c *Baremetal) setClient(region string) (err error) {
-
-	cfg := c.cfg[region]
+	var cfg bmConfig
+	var ok bool
+	if cfg, ok = c.cfg[region]; !ok {
+		return fmt.Errorf("Cannot set client: Region %s is not defined in configmap", region)
+	}
 
 	os.Setenv("OS_AUTH_URL", cfg.AuthURL)
 	os.Setenv("OS_USERNAME", cfg.User)
