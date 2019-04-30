@@ -42,7 +42,7 @@ type (
 		client *gophercloud.ServiceClient
 		ctx    context.Context
 		log    *log.Entry
-		cfg    bmConfig
+		cfg    map[string]bmConfig
 	}
 
 	maintenanceReason struct {
@@ -50,10 +50,6 @@ type (
 	}
 
 	bmConfig struct {
-		Regions map[string]region `yaml:"regions"`
-	}
-
-	region struct {
 		User     string `yaml:"user"`
 		Password string `yaml:"password"`
 		AuthURL  string `yaml:"auth_url"`
@@ -75,7 +71,7 @@ func init() {
 }
 
 func NewBaremetalHandler(ctx context.Context, handler interface{}) (Handler, error) {
-	var cfg bmConfig
+	var cfg map[string]bmConfig
 	if err := UnmarshalHandler(handler, &cfg); err != nil {
 		return nil, err
 	}
@@ -170,7 +166,7 @@ func (c *Baremetal) getNodeID(a template.Alert) (nodeID string, err error) {
 
 func (c *Baremetal) setClient(region string) (err error) {
 
-	cfg := c.cfg.Regions[region]
+	cfg := c.cfg[region]
 
 	os.Setenv("OS_AUTH_URL", cfg.AuthURL)
 	os.Setenv("OS_USERNAME", cfg.User)
