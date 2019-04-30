@@ -207,6 +207,7 @@ func (c *Baremetal) setClient(region string) (err error) {
 }
 
 func (c *Baremetal) getNode(id string) (node *nodes.Node, err error) {
+	fmt.Println(nodes.Get(c.client, id))
 	node, err = nodes.Get(c.client, id).Extract()
 	if err != nil {
 		return node, err
