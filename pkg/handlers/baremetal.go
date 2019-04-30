@@ -201,6 +201,7 @@ func (c *Baremetal) setClient(region string) (err error) {
 		ProviderClient: provider,
 		Endpoint:       url,
 		Type:           serviceType,
+		Microversion:   "1.46",
 	}
 
 	return
