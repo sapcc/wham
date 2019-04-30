@@ -172,7 +172,7 @@ func (c *Baremetal) setClient(region string) (err error) {
 	os.Setenv("OS_USERNAME", cfg.User)
 	os.Setenv("OS_PASSWORD", cfg.Password)
 
-	c.log.Debugf("Setting new client for region: %ss", region)
+	c.log.Debugf("Setting new client for region: %s", region)
 
 	opts, err := openstack.AuthOptionsFromEnv()
 	if err != nil {
@@ -208,7 +208,6 @@ func (c *Baremetal) setClient(region string) (err error) {
 }
 
 func (c *Baremetal) getNode(id string) (node *nodes.Node, err error) {
-	fmt.Println(nodes.Get(c.client, id))
 	node, err = nodes.Get(c.client, id).Extract()
 	if err != nil {
 		return node, err
@@ -218,8 +217,7 @@ func (c *Baremetal) getNode(id string) (node *nodes.Node, err error) {
 }
 
 func (c *Baremetal) setNodeInMaintenance(node *nodes.Node) (err error) {
-	fmt.Println("--------------------> provision_state:", node.ProvisionState)
-	fmt.Println("--------------------> node:", node)
+	c.log.Debug("Extracted node: ", node)
 	switch node.ProvisionState {
 	case nodes.Available, nodes.Manageable:
 		updated, err := nodes.Update(c.client, node.UUID, nodes.UpdateOpts{
