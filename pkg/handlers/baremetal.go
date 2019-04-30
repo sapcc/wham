@@ -216,37 +216,40 @@ func (c *Baremetal) getNode(id string) (node *nodes.Node, err error) {
 }
 
 func (c *Baremetal) setNodeInMaintenance(node *nodes.Node) (err error) {
-	if node.ProvisionState == nodes.Active {
-		return fmt.Errorf("node %s: Cannot set Active node into maintenance", node.UUID)
-	}
-	updated, err := nodes.Update(c.client, node.UUID, nodes.UpdateOpts{
-		nodes.UpdateOperation{
-			Op:    nodes.ReplaceOp,
-			Path:  "/maintenance",
-			Value: "true",
-		},
-	}).Extract()
 
-	if err == nil && updated.Maintenance {
-		c.log.Infof("node %s: successfuly put into maintenance", node.UUID)
-	} else {
-		if err == nil {
-			return fmt.Errorf("node %s: unable to into maintenace", node.UUID)
+	switch node.ProvisionState {
+	case nodes.Available, nodes.Manageable:
+		updated, err := nodes.Update(c.client, node.UUID, nodes.UpdateOpts{
+			nodes.UpdateOperation{
+				Op:    nodes.ReplaceOp,
+				Path:  "/maintenance",
+				Value: "true",
+			},
+		}).Extract()
+
+		if err == nil && updated.Maintenance {
+			c.log.Infof("node %s: successfuly put into maintenance", node.UUID)
+		} else {
+			if err == nil {
+				return fmt.Errorf("node %s: unable to into maintenace", node.UUID)
+			}
+			return err
 		}
-		return
+
+		err = c.setNodeMaintenanceReason(node.UUID, maintenanceReason{
+			Reason: maintenanceReasonText,
+		})
+
+		if err == nil {
+			c.log.Infof("node %s: successfuly set maintenance_reason", node.UUID)
+		} else {
+			return fmt.Errorf("Could not set node: %s maintenance reason. Error %s", node.UUID, err.Error())
+		}
+
+		return err
+	default:
+		return fmt.Errorf("node %s: Cannot set node which is in provision_state: %s into maintenance", node.UUID, node.ProvisionState)
 	}
-
-	err = c.setNodeMaintenanceReason(node.UUID, maintenanceReason{
-		Reason: maintenanceReasonText,
-	})
-
-	if err == nil {
-		c.log.Infof("node %s: successfuly set maintenance_reason", node.UUID)
-	} else {
-		return fmt.Errorf("Could not set node: %s maintenance reason. Error %s", node.UUID, err.Error())
-	}
-
-	return
 }
 
 func (c *Baremetal) setNodeMaintenanceReason(id string, reason maintenanceReason) (err error) {
