@@ -216,7 +216,7 @@ func (c *Baremetal) getNode(id string) (node *nodes.Node, err error) {
 }
 
 func (c *Baremetal) setNodeInMaintenance(node *nodes.Node) (err error) {
-
+	fmt.Println("--------------------> provision_state:", node.ProvisionState)
 	switch node.ProvisionState {
 	case nodes.Available, nodes.Manageable:
 		updated, err := nodes.Update(c.client, node.UUID, nodes.UpdateOpts{
