@@ -9,14 +9,17 @@ import (
 	"github.com/sapcc/wham/pkg/api"
 	"github.com/sapcc/wham/pkg/config"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
+//Manager struct
 type Manager struct {
 	opts config.Options
 	ctx  context.Context
 	log  *log.Entry
 }
+
+//HandlerFactory function to create handlers
 type HandlerFactory func(ctx context.Context, config interface{}) (Handler, error)
 
 var handlerFactories = make(map[string]HandlerFactory)
@@ -35,6 +38,7 @@ func New(ctx context.Context, cfg config.Options) *Manager {
 	return manager
 }
 
+//Register registers a handler to the HandlerFactory
 func Register(name string, factory HandlerFactory) {
 	if factory == nil {
 		log.Panicf("Handler factory %s does not exist.", name)
@@ -46,6 +50,7 @@ func Register(name string, factory HandlerFactory) {
 	handlerFactories[name] = factory
 }
 
+//CreateHandler creates handler with name and handler config interface
 func (m Manager) CreateHandler(name string, handler interface{}) (Handler, error) {
 
 	handlerFactory, ok := handlerFactories[name]
@@ -66,7 +71,7 @@ func (m Manager) getHandlers() []string {
 	return availableHandlers
 }
 
-// Run starts the manager and its handlers
+//Start starts the manager and its handlers
 func (m Manager) Start(wg *sync.WaitGroup, cfg config.Config) {
 	defer wg.Done()
 	wg.Add(1)
@@ -89,11 +94,12 @@ func (m Manager) Start(wg *sync.WaitGroup, cfg config.Config) {
 	}()
 }
 
-func UnmarshalHandler(handlerIn, handlerOut interface{}) error {
+//UnmarshalHandlerConfig unmarshals handler configs
+func UnmarshalHandlerConfig(handlerConfigIn, handlerConfigOut interface{}) error {
 
-	h, err := yaml.Marshal(handlerIn)
+	h, err := yaml.Marshal(handlerConfigIn)
 	if err != nil {
 		return err
 	}
-	return yaml.Unmarshal(h, handlerOut)
+	return yaml.Unmarshal(h, handlerConfigOut)
 }

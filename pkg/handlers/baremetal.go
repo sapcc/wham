@@ -38,6 +38,7 @@ import (
 )
 
 type (
+	//Baremetal handler struct
 	Baremetal struct {
 		client *gophercloud.ServiceClient
 		ctx    context.Context
@@ -63,6 +64,9 @@ var (
 		Name:      "wham_ironic_total",
 		Help:      "Number of webhooks received by this handler",
 	})
+	logFields = log.Fields{
+		"component": "baremetal_handler",
+	}
 )
 
 func init() {
@@ -70,9 +74,10 @@ func init() {
 
 }
 
-func NewBaremetalHandler(ctx context.Context, handler interface{}) (Handler, error) {
+//NewBaremetalHandler create a baremetal handler instance
+func NewBaremetalHandler(ctx context.Context, handlerConfig interface{}) (Handler, error) {
 	var cfg map[string]bmConfig
-	if err := UnmarshalHandler(handler, &cfg); err != nil {
+	if err := UnmarshalHandlerConfig(handlerConfig, &cfg); err != nil {
 		return nil, err
 	}
 
@@ -80,9 +85,7 @@ func NewBaremetalHandler(ctx context.Context, handler interface{}) (Handler, err
 		return nil, err
 	}
 
-	contextLogger := log.WithFields(log.Fields{
-		"component": "baremetal_handler",
-	})
+	contextLogger := log.WithFields(logFields)
 
 	return &Baremetal{
 		ctx: ctx,
@@ -128,6 +131,8 @@ func (c *Baremetal) alert(a template.Alert) (err error) {
 	if !isset {
 		return fmt.Errorf("No region set in alert %s", name)
 	}
+	logFields["region"] = region
+	c.log.WithFields(logFields)
 	if err := c.setClient(region); err != nil {
 		return err
 	}
